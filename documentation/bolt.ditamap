@@ -38,4 +38,14 @@
         <topicref href="writing_plugins.md" format="markdown"/>
     </topicref>
     <topicref href="bolt_examples.md" format="markdown"/>
+    <topicref href="references.md" format="markdown">
+        <topicref href="references/transports.md" format="markdown">
+            <topicref href="references/transports/docker.md" format="markdown"/>
+            <topicref href="references/transports/local.md" format="markdown"/>
+            <topicref href="references/transports/pcp.md" format="markdown"/>
+            <topicref href="references/transports/remote.md" format="markdown"/>
+            <topicref href="references/transports/ssh.md" format="markdown"/>
+            <topicref href="references/transports/winrm.md" format="markdown"/>
+        </topicref>
+    </topicref>
 </map>
