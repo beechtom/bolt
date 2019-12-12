@@ -44,13 +44,13 @@ describe Bolt::Plugin do
     expect(hooks).not_to include(:decrypt)
   end
 
-  context 'evaluating plugin config' do
+  context 'evaluating plugin config', :ssh do
     it 'lets a plugin depend on another plugin' do
       plugin_config.replace('pkcs7' => { 'keysize' => identity(1024) })
       expect(plugins.by_name('pkcs7').keysize).to eq(1024)
     end
 
-    it 'fails if a plugin depends on itself' do
+    it 'fails if a plugin depends on itself', :ssh do
       plugin_config.replace('identity' => { 'foo' => identity('bar') })
       expect { plugins }.to raise_error(/Configuration for plugin 'identity' depends on the plugin itself/)
     end
@@ -68,7 +68,7 @@ describe Bolt::Plugin do
     end
   end
 
-  context 'loading plugin_hooks' do
+  context 'loading plugin_hooks', :ssh do
     it 'evaluates plugin references in the plugin_hooks configuration' do
       config_data['plugin_hooks'] = {
         'puppet_library' => {

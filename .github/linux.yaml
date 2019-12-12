@@ -1,0 +1,125 @@
+name: Linux build
+
+on: [push]
+
+env:
+  REGISTRY_HOST: pcr-internal.puppet.net
+  DOCKER_REGISTRY: pe-and-platform
+  BOLT_SUDO_USER: true
+  secure: Gk8LaACXYEVpv5LIWEMOuH3sJP4CzB2aSvE1BUcfDWkI+Hdgr2by3w/nGbKpyVD+v2H8r0zXyVrbCJ/qzx2gCRxqKJ2GKJEsrStT+8z3BXRRRzwkThIBVyWKk9b9bTt8AE0G94I3BE4gJyIPfbX5XxnKcg7nJZGOmubZpUPQX+2SXSfy9EbtY9iismwK7LGtWv6l90cK2eSLZGvdsSKPo7cylOldXfdYIyeBtvsIL1juBaiINX52Zgt371+nX53fDSYOKdIDLuhNqX3zpNOuIJ9DUj4E7IJA7+XhHy77zL98VjHtPo5H4fmKyZ2k+xbYqOydc5OPGguKequsnyDo5npktDrkbswnjWMXNDu+wImAd+IwHG2lTamsAnOGQ+E6g2oK0R5fUL26XJ3lBnTRrsLDnlrvqYqFxt3MCR+o5+DnTirSVQJfrRVsIKTucWHlYLTOUWkVDrLavJqIbWHytEbMf/BXUcovlQzSgfu5/Y1GkUJBnthtbiZfTImmBLcrqKDD4PnDmvC1v9Z5KR78MYu7lFTe5C4STj2aR6bwvqjiPKm6kYG5etOFEyRJ+CbqD2QsdF2N6Ww/RFWovqVqQIWuGdhumDUTdmQAiiPxl12M0+kIH6NugpBD3gt4RT0sni/T+booDw6b3Ts4WJ8FW1/LPWdy7gVo9yOCL4FhjOw=
+
+jobs:
+
+  modules:
+    name: Modules
+    runs-on: ubuntu-16.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+      - name: Setup Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: '2.5.x'
+      - name: Install bundler
+        run: |
+          gem install bundler
+          bundle config path vendor/bundle
+      - name: Cache gems
+        id: cache
+        uses: actions/cache@v1
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile') }}
+      - name: Install gems
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: bundle install --jobs 4 --retry 3
+      - name: Run module tests
+        run: bundle exec rake travis:modules
+
+  unit:
+    name: Unit
+    runs-on: ubuntu-16.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+      - name: Setup Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: '2.5.x'
+      - name: Install bundler
+        run: |
+          gem install bundler
+          bundle config path vendor/bundle
+      - name: Cache gems
+        id: cache
+        uses: actions/cache@v1
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile') }}
+      - name: Install gems
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: bundle install --jobs 4 --retry 3
+      - name: Pre-test setup
+        run: |
+          eval `ssh-agent`
+          sudo useradd travis
+          echo 'travis:travis' | sudo chpasswd
+          echo 'root:root' | sudo chpasswd
+          sudo sh -c "echo 'Defaults authenticate' >> /etc/sudoers"
+          sudo sh -c "echo 'travis  ALL=(ALL) PASSWD:ALL' >> /etc/sudoers"
+      - name: Upgrade Docker
+        run: |
+          sudo curl -L https://github.com/docker/compose/releases/download/1.23.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+      - name: Run unit tests
+        run: bundle exec rake travis:unit
+      - name: Post-test teardown
+        run: |
+          sync
+          export line_sep=$(printf '%*s' 80 | tr ' ' '#')
+          docker ps --all -q | xargs -L 1 -I % sh -c 'echo "\n${line_sep}\nContainer Logs - $(docker inspect % --format={{.Name}})\n${line_sep}\n"; docker logs %'
+          sleep 3s
+
+  integration:
+    name: Integration
+    runs-on: ubuntu-16.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v1
+      - name: Setup Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: '2.5.x'
+      - name: Install bundler
+        run: |
+          gem install bundler
+          bundle config path vendor/bundle
+      - name: Cache gems
+        id: cache
+        uses: actions/cache@v1
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile') }}
+      - name: Install gems
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: bundle install --jobs 4 --retry 3
+      - name: Pre-test setup
+        run: |
+          eval `ssh-agent`
+          sudo useradd travis
+          echo 'travis:travis' | sudo chpasswd
+          sudo sh -c "echo 'Defaults authenticate' >> /etc/sudoers"
+          sudo sh -c "echo 'travis  ALL=(ALL) PASSWD:ALL' >> /etc/sudoers"
+          whoami
+      - name: Upgrade Docker
+        run: |
+          sudo curl -L https://github.com/docker/compose/releases/download/1.23.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+      - name: Run integration tests
+        run: bundle exec rake travis:integration
+      - name: Post-test teardown
+        run: |
+          sync
+          export line_sep=$(printf '%*s' 80 | tr ' ' '#')
+          docker ps --all -q | xargs -L 1 -I % sh -c 'echo "\n${line_sep}\nContainer Logs - $(docker inspect % --format={{.Name}})\n${line_sep}\n"; docker logs %'
+          sleep 3s

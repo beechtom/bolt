@@ -5,7 +5,7 @@ require 'bolt_spec/conn'
 require 'bolt_spec/files'
 require 'bolt_spec/integration'
 
-describe 'using module based plugins' do
+describe 'using module based plugins', :ssh do
   include BoltSpec::Conn
   include BoltSpec::Integration
 

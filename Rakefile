@@ -28,7 +28,7 @@ desc "Run RSpec tests for AppVeyor that don't require SSH, Bash, Appveyor Puppet
 RSpec::Core::RakeTask.new(:appveyor) do |t|
   t.rspec_opts = '--tag ~ssh --tag ~docker --tag ~bash --tag ~appveyor_agents ' \
          '--tag ~orchestrator --tag ~puppetserver --tag ~puppetdb --tag ~omi ' \
-         '--tag ~kerberos'
+         '--tag ~kerberos --format documentation'
 end
 
 desc "Run RSpec tests for TravisCI that don't require WinRM"
