@@ -31,8 +31,8 @@ RSpec::Core::RakeTask.new(:appveyor) do |t|
          '--tag ~kerberos'
 end
 
-desc "Run RSpec tests for TravisCI that don't require WinRM"
-RSpec::Core::RakeTask.new(:travisci) do |t|
+desc "Run RSpec tests for GitHub Actions that don't require WinRM"
+RSpec::Core::RakeTask.new(:ci) do |t|
   t.rspec_opts = '--tag ~winrm --tag ~appveyor_agents --tag ~puppetserver --tag ~puppetdb ' \
   '--tag ~omi --tag ~windows --tag ~kerberos --tag ~expensive'
 end
@@ -57,13 +57,11 @@ def format_links(text)
   text.gsub(/{([^}]+)}/, '[`\1`](#\1)')
 end
 
-namespace :travis do
+namespace :github do
   task rubocop: :rubocop
   task :unit do
-    sh "docker-compose -f spec/docker-compose.yml build --parallel ubuntu_node puppet_5_node puppet_6_node"
-    sh "docker-compose -f spec/docker-compose.yml up -d ubuntu_node puppet_5_node puppet_6_node"
     sh "r10k puppetfile install"
-    Rake::Task['travisci'].invoke
+    Rake::Task['ci'].invoke
   end
   task :modules do
     success = true
@@ -78,8 +76,6 @@ namespace :travis do
   end
   task docs: :generate_docs
   task :integration do
-    sh "docker-compose -f spec/docker-compose.yml build --parallel"
-    sh "docker-compose -f spec/docker-compose.yml up -d"
     sh "r10k puppetfile install"
     # Wait for containers to be started
     result = 15.times do
