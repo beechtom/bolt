@@ -109,6 +109,18 @@ namespace :docs do
     @puppetfile = { options: Bolt::Config::PUPPETFILE_OPTIONS }
     @apply = { options: Bolt::Config::APPLY_SETTINGS, defaults: Bolt::Config::DEFAULT_APPLY_SETTINGS }
     @project = { options: Bolt::Project::PROJECT_SETTINGS, defaults: {} }
+    @run_as = { options: Bolt::Config::Transport::Base::RUN_AS_OPTIONS }
+
+    parser = Bolt::BoltOptionParser.new({})
+    @run_as_options = Bolt::BoltOptionParser::OPTIONS[:escalation].map do |option|
+      switch = parser.top.long[option]
+
+      {
+        long: switch.long.first,
+        arg: switch.arg,
+        desc: switch.desc.map { |d| d.gsub("<", "&lt;") }.join("<br>")
+      }
+    end
 
     Bolt::Config::TRANSPORT_CONFIG.each do |name, transport|
       @transports[:options][name] = transport::OPTIONS
@@ -117,6 +129,9 @@ namespace :docs do
 
     renderer = ERB.new(File.read('documentation/bolt_configuration_reference.md.erb'), nil, '-')
     File.write('documentation/bolt_configuration_reference.md', renderer.result)
+
+    sudorenderer = ERB.new(File.read('documentation/privilege-escalation.md.erb'), nil, '-')
+    File.write('documentation/privilege_escalation.md', sudorenderer.result)
   end
 
   desc 'Generate markdown docs for bolt-defaults.yaml'

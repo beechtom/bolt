@@ -97,16 +97,6 @@ module Bolt
           "proxyjump"             => { type: String,
                                        desc: "A jump host to proxy connections through, and an optional user to "\
                                              "connect with." },
-          "run-as"                => { type: String,
-                                       external: true,
-                                       desc: "A different user to run commands as after login." },
-          "run-as-command"        => { type: Array,
-                                       external: true,
-                                       desc: "The command to elevate permissions. Bolt appends the user and command "\
-                                             "strings to the configured `run-as-command` before running it on the "\
-                                             "target. This command must not require an interactive password prompt, "\
-                                             "and the `sudo-password` option is ignored when `run-as-command` is "\
-                                             "specified. The `run-as-command` must be specified as an array." },
           "script-dir"            => { type: String,
                                        external: true,
                                        desc: "The subdirectory of the tmpdir to use in place of a randomized "\
@@ -117,17 +107,6 @@ module Bolt
                                        desc: "Command and flags to use when SSHing. This enables the external "\
                                              "SSH transport which shells out to the specified command. "\
                                              "**This option is experimental.**" },
-          "sudo-executable"       => { type: String,
-                                       external: true,
-                                       desc: "The executable to use when escalating to the configured `run-as` "\
-                                             "user. This is useful when you want to escalate using the configured "\
-                                             "`sudo-password`, since `run-as-command` does not use `sudo-password` "\
-                                             "or support prompting. The command executed on the target is "\
-                                             "`<sudo-executable> -S -u <user> -p custom_bolt_prompt <command>`. "\
-                                             "**This option is experimental.**" },
-          "sudo-password"         => { type: String,
-                                       external: true,
-                                       desc: "Password to use when changing users via `run-as`." },
           "tmpdir"                => { type: String,
                                        external: true,
                                        desc: "The directory to upload and execute temporary files on the target." },
@@ -138,7 +117,7 @@ module Bolt
           "user"                  => { type: String,
                                        external: true,
                                        desc: "Login user." }
-        }.freeze
+        }.merge(RUN_AS_OPTIONS).freeze
 
         DEFAULTS = {
           "cleanup"            => true,

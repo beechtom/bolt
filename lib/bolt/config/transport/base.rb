@@ -7,6 +7,30 @@ module Bolt
   class Config
     module Transport
       class Base
+        RUN_AS_OPTIONS = {
+          "run-as" => { type: String,
+                        external: true,
+                        desc: "A different user to run commands as after login." },
+          "run-as-command" => { type: Array,
+                                external: true,
+                                desc: "The command to elevate permissions. Bolt appends the user and command "\
+                                             "strings to the configured `run-as-command` before running it on the "\
+                                             "target. This command must not require an interactive password prompt, "\
+                                             "and the `sudo-password` option is ignored when `run-as-command` is "\
+                                             "specified. The `run-as-command` must be specified as an array." },
+          "sudo-executable" => { type: String,
+                                 external: true,
+                                 desc: "The executable to use when escalating to the configured `run-as` "\
+                                             "user. This is useful when you want to escalate using the configured "\
+                                             "`sudo-password`, since `run-as-command` does not use `sudo-password` "\
+                                             "or support prompting. The command executed on the target is "\
+                                             "`<sudo-executable> -S -u <user> -p custom_bolt_prompt <command>`. "\
+                                             "**This option is experimental.**" },
+          "sudo-password" => { type: String,
+                               external: true,
+                               desc: "Password to use when changing users via `run-as`." }
+        }.freeze
+
         attr_reader :input
 
         def initialize(data = {}, project = nil)

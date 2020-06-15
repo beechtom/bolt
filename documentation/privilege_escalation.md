@@ -1,0 +1,94 @@
+# Escalating privilege on Bolt targets
+
+By default Bolt executes on remote systems as the same user it connects to the system with.
+Sometimes connection and execution need to be done as separate users, for example needing to install
+a package as the root user on a system that doesn't allow incoming connections as the root user.
+Bolt has several configuration options for setting which user to execute as, how to escalate to
+that user, and how to run commands as that user.
+
+> **Note:** Executing as a different user is only supported when using the Bash shell over the SSH
+> or Local transport.
+
+### Limitations
+
+The specified `run-as` user will only be used if:
+
+* The target shell is bash
+* The transport is Local or SSH
+* The configured `run-as` user is different than the connecting `user`
+
+## Configuring `run-as`
+
+### Command-line options
+
+
+#### `--run-as USER`
+
+User to run as using privilege escalation
+
+#### `--sudo-password PASSWORD`
+
+Password for privilege escalation
+
+#### `--sudo-password-prompt`
+
+Prompt for user to input escalation password
+
+#### `--sudo-executable EXEC`
+
+Specify an executable for running as another user.<br>This option is experimental.
+
+
+### Configuration file options
+
+#### run-as
+
+A different user to run commands as after login.
+
+- **Type:** String
+#### run-as-command
+
+The command to elevate permissions. Bolt appends the user and command strings to the configured `run-as-command` before running it on the target. This command must not require an interactive password prompt, and the `sudo-password` option is ignored when `run-as-command` is specified. The `run-as-command` must be specified as an array.
+
+- **Type:** Array
+#### sudo-executable
+
+The executable to use when escalating to the configured `run-as` user. This is useful when you want to escalate using the configured `sudo-password`, since `run-as-command` does not use `sudo-password` or support prompting. The command executed on the target is `<sudo-executable> -S -u <user> -p custom_bolt_prompt <command>`. **This option is experimental.**
+
+- **Type:** String
+#### sudo-password
+
+Password to use when changing users via `run-as`.
+
+- **Type:** String
+
+
+## How `run-as` works
+
+For all execution Bolt builds a command string to be run on the remote
+system. The command is built from many configuration options including
+interpreters, task input method, and `run-as` configuration. When `run-as` is
+set the following is prepended to the command being run:
+
+```
+<sudo-executable> -S -H -u <run-as> -p '[sudo] Bolt needs to run as another user, password:'
+```
+
+Where the default `sudo-executable` is `sudo`. If you're running a task that
+reads parameters from environment variables `-E` will be appended.
+
+> **Note:** The command is shell escaped, so each value is interpreted
+> literally. This means you can't set sudo flags in the `run-as` configuration.
+> Use the `run-as-command` option to specify your own sudo command and flags.
+
+You can replace this command wholesale by specifying `run-as-command`, which
+will prepend the following to the command being run:
+
+```
+<run-as-command> <run-as>
+```
+
+This enables using any executable and flags to change users. The only drawback
+to specifying `run-as-command` is that it's fully non-interactive, so if the
+system prompts for a password Bolt will error instead of supplying the password
+like we do for vanilla `run-as`.
