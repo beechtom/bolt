@@ -151,7 +151,7 @@ begin
                                          'bolt-modules/system'])
       json = JSON.parse(File.read(tmpfile))
       funcs = json.delete('puppet_functions')
-      json.delete('data_types')
+      @types = json.delete('data_types').map { |type| type['name'] }
       json.each { |k, v| raise "Expected #{k} to be empty, found #{v}" unless v.empty? }
 
       # @functions will be a list of function descriptions, structured as
@@ -340,5 +340,17 @@ def stringify_types(data)
 end
 
 def format_links(text)
+  format_function_links(format_type_links(text))
+end
+
+def format_function_links(text)
   text.gsub(/{([^}]+)}/, '[`\1`](#\1)')
+end
+
+def format_type_links(text)
+  @types.each do |type|
+    text = text.gsub(/(`?#{type}`?)/, '[\1](bolt_types_reference.md#\1)')
+  end
+
+  text
 end
