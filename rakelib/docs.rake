@@ -151,57 +151,69 @@ begin
                                          'bolt-modules/system'])
       json = JSON.parse(File.read(tmpfile))
       funcs = json.delete('puppet_functions')
-      @types = json.delete('data_types').map { |type| type['name'] }
+      @types = json.delete('data_types').map { |type| type['name'] }.to_set
       json.each { |k, v| raise "Expected #{k} to be empty, found #{v}" unless v.empty? }
 
       # @functions will be a list of function descriptions, structured as
       #   name: function name
-      #   text: function description; first line should be usable as a summary
+      #   desc: function description
       #   signatures: a list of function overloads
-      #     text: overload description
+      #     desc: overload description
       #     signature: function signature
-      #     returns: list of return statements
-      #       text: return description
-      #       types: list of types (probably only one entry)
+      #     return: return type
       #     params: list of params
       #       name: parameter name
-      #       text: description
-      #       types: list of types (probably only one entry)
-      #     examples: list of examples
-      #       name: description
-      #       text: example body
+      #       desc: description
+      #       type: type
+      #   examples: list of examples
+      #     desc: description
+      #     exmp: example body
       @functions = funcs.map do |func|
-        func['text'] = func['docstring']['text']
+        data = {
+          'name'       => func['name'],
+          'desc'       => func['docstring']['text'],
+          'signatures' => [],
+          'examples'   => []
+        }
 
-        overloads = func['docstring']['tags'].select { |tag| tag['tag_name'] == 'overload' }
-        sig_tags = overloads.map { |overload| overload['docstring']['tags'] }
-        sig_tags = [func['docstring']['tags']] if sig_tags.empty?
-        func['signatures'] = func['signatures'].zip(sig_tags).map do |sig, tags|
-          sig['text'] = sig['docstring']['text']
-          sects = sig['docstring']['tags'].group_by { |t| t['tag_name'] }
-          sig['returns'] = sects['return'].map do |ret|
-            ret['text'] = format_links(ret['text'])
-            ret
-          end
-          sig['params'] = sects['param'].map do |param|
-            param['text'] = format_links(param['text'])
-            param
-          end
-          if sects['option']
-            sig['options'] = sects['option'].map do |option|
-              option['opt_text'] = format_links(option['opt_text'])
-              option
+        func['signatures'].each do |signature|
+          sig = {
+            'desc'      => format_links(signature.dig('docstring', 'text')),
+            'params'    => {},
+            'options'   => {}
+          }
+
+          return_type = nil
+
+          signature.dig('docstring', 'tags').each do |tag|
+            case tag['tag_name']
+            when 'example'
+              data['examples'].push(
+                'desc' => format_links(tag['name']),
+                'exmp' => tag['text']
+              )
+            when 'option'
+              sig['options'][tag['opt_name']] ||= {
+                'desc' => format_links(tag['opt_text']).gsub("\n", "\s"),
+                'type' => format_type(tag['opt_types'].first)
+              }
+            when 'param'
+              sig['params'][tag['name']] ||= {
+                'desc' => format_links(tag['text']).gsub("\n", "\s"),
+                'type' => format_type(tag['types'].first)
+              }
+            when 'return'
+              return_type   = tag['types'].first
+              sig['return'] = format_type(return_type)
             end
           end
 
-          # get examples from overload docstring; puppet-strings should probably do this.
-          examples = tags.select { |t| t['tag_name'] == 'example' }
-          sig['examples'] = examples
-          sig.delete('docstring')
-          sig
+          sig['signature'] = make_signature(func['name'], sig['params'].keys, return_type)
+
+          data['signatures'].push(sig)
         end
 
-        func
+        data
       end
       renderer = ERB.new(File.read(template), nil, '-')
       File.write(filepath, renderer.result)
@@ -340,17 +352,17 @@ def stringify_types(data)
 end
 
 def format_links(text)
-  format_function_links(format_type_links(text))
-end
-
-def format_function_links(text)
   text.gsub(/{([^}]+)}/, '[`\1`](#\1)')
 end
 
-def format_type_links(text)
-  @types.each do |type|
-    text = text.gsub(/(`?#{type}`?)/, '[\1](bolt_types_reference.md#\1)')
+def format_type(type)
+  if @types.include?(type)
+    "[`#{type}`](bolt_types_reference.md##{type.downcase})"
+  else
+    "`#{type}`"
   end
+end
 
-  text
+def make_signature(function_name, params, return_type)
+  "#{function_name}(#{params.join(', ')}) => #{return_type}"
 end
