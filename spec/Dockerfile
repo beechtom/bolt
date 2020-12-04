@@ -1,4 +1,4 @@
-FROM rastasheep/ubuntu-sshd:18.04
+FROM rastasheep/ubuntu-sshd:18.04 AS base
 RUN apt-get update && apt-get -y install sudo tree locales apt-transport-https
 RUN locale-gen en_US.UTF-8
 
@@ -25,4 +25,25 @@ RUN chmod 700 /home/test/.ssh/
 RUN chmod 600 /home/test/.ssh/authorized_keys
 RUN chown -R test:sudo /home/test
 
+CMD ["/usr/sbin/sshd", "-D"]
+
+FROM base AS puppet5
+RUN wget https://apt.puppetlabs.com/puppet5-release-bionic.deb \
+    && sudo dpkg -i puppet5-release-bionic.deb \
+    && sudo apt update \
+    && sudo apt-get install puppet-agent
+CMD ["/usr/sbin/sshd", "-D"]
+
+FROM base AS puppet6
+RUN wget https://apt.puppetlabs.com/puppet6-release-bionic.deb \
+    && sudo dpkg -i puppet6-release-bionic.deb \
+    && sudo apt update \
+    && sudo apt-get install puppet-agent
+CMD ["/usr/sbin/sshd", "-D"]
+
+FROM base AS puppet7
+RUN wget https://apt.puppetlabs.com/puppet7-release-bionic.deb \
+    && sudo dpkg -i puppet7-release-bionic.deb \
+    && sudo apt update \
+    && sudo apt-get install puppet-agent
 CMD ["/usr/sbin/sshd", "-D"]
