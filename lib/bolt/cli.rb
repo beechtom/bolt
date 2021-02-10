@@ -466,31 +466,31 @@ module Bolt
       when 'show'
         case options[:subcommand]
         when 'task'
-          if options[:object]
-            show_task(options[:object])
-          else
-            list_tasks
-          end
+          # if options[:object]
+          #   show_task(options[:object])
+          # else
+          #   list_tasks
+          # end
         when 'plan'
-          if options[:object]
-            show_plan(options[:object])
-          else
-            list_plans
-          end
+          # if options[:object]
+          #   show_plan(options[:object])
+          # else
+          #   list_plans
+          # end
         when 'inventory'
-          if options[:detail]
-            show_targets
-          else
-            list_targets
-          end
+          # if options[:detail]
+          #   show_targets
+          # else
+          #   list_targets
+          # end
         when 'group'
-          list_groups
+          # list_groups
         when 'module'
-          list_modules
+          # list_modules
         end
         return 0
       when 'convert'
-        pal.convert_plan(options[:object])
+        # pal.convert_plan(options[:object])
         return 0
       end
 
