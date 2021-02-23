@@ -1,0 +1,55 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', '**.erb', 'schemas/*']
+  pull_request:
+    types: [opened, reopened, edited, synchronize]
+    paths-ignore: ['**.md', '**.erb', 'schemas/*']
+
+env:
+  BOLT_SUDO_USER: true
+  BOLT_WINRM_USER: roddypiper
+  BOLT_WINRM_HOST: localhost
+  BOLT_WINRM_PORT: 5985
+  BOLT_WINRM_SSL_PORT: 5986
+  BOLT_WINRM_SMB_PORT: 445
+  RUBY_VERSION: 25-x64
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+
+  tests:
+    name: ${{ matrix.os }} ${{ matrix.type }}
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        type: [integration, modules, unit]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Ruby and install gems
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+          bundler-cache: true
+
+      - name: Update gems
+        run: bundle update
+
+      - name: Install modules
+        run: bundle exec r10k puppetfile install
+
+      - name: Setup testing infrastructure
+        if: matrix.type == 'integration'
+        run: bundle exec rake tests:${{ runner.os }}:setup
+
+      - name: Run tests
+        run: bundle exec rake tests:${{ runner.os }}:${{ matrix.type }}

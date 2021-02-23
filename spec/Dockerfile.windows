@@ -1,0 +1,6 @@
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
+
+ARG PUPPET_COLLECTION
+
+RUN powershell Invoke-WebRequest http://downloads.puppetlabs.com/windows/puppet6/puppet-agent-x64-latest.msi -O puppet-agent-x64-latest.msi
+RUN msiexec /qn /norestart /i puppet-agent-x64-latest.msi

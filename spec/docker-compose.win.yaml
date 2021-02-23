@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+
+  puppet_6_node:
+    build:
+      context: .
+      dockerfile: Dockerfile.windows
+      args:
+        PUPPET_COLLECTION: puppet6
+    container_name: puppet_6_node
+    ports:
+      - 15985:5985
+      - 15986:5986

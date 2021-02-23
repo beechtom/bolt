@@ -8,75 +8,47 @@ begin
     desc "Run all RSpec tests"
     RSpec::Core::RakeTask.new(:spec)
 
-    desc "Run RSpec tests that do not require VM fixtures or a particular shell"
-    RSpec::Core::RakeTask.new(:unit) do |t|
-      t.rspec_opts = '--tag ~ssh --tag ~docker --tag ~bash --tag ~winrm ' \
-                     '--tag ~windows_agents --tag ~puppetserver --tag ~puppetdb ' \
-                     '--tag ~omi --tag ~kerberos'
-    end
-
-    desc 'Run tests that require a host System Under Test configured with WinRM'
-    RSpec::Core::RakeTask.new(:winrm) do |t|
-      t.rspec_opts = '--tag winrm'
-    end
-
-    desc 'Run tests that require a host System Under Test configured with SSH'
-    RSpec::Core::RakeTask.new(:ssh) do |t|
-      t.rspec_opts = '--tag ssh'
-    end
-
-    desc 'Run tests that require a host System Under Test configured with Docker'
-    RSpec::Core::RakeTask.new(:docker) do |t|
-      t.rspec_opts = '--tag docker'
-    end
-
-    desc 'Run tests that require Bash on the local host'
-    RSpec::Core::RakeTask.new(:bash) do |t|
-      t.rspec_opts = '--tag bash'
-    end
-
-    desc 'Run tests that require Windows on the local host'
-    RSpec::Core::RakeTask.new(:windows) do |t|
-      t.rspec_opts = '--tag windows'
-    end
-
-    desc 'Run tests that require OMI docker container'
-    RSpec::Core::RakeTask.new(:omi) do |t|
-      t.rspec_opts = '--tag omi'
-    end
-  end
-
-  # The following tasks are run during CI and require additional environment setup
-  # to run. Jobs that run these tests can be viewed in .github/workflows/
-  namespace :ci do
-    namespace :linux do
-      # Run RSpec tests that do not require WinRM
+    namespace :Linux do
       desc ''
-      RSpec::Core::RakeTask.new(:fast) do |t|
-        t.rspec_opts = '--tag ~winrm --tag ~windows_agents --tag ~puppetserver --tag ~puppetdb ' \
-                       '--tag ~omi --tag ~windows --tag ~kerberos --tag ~expensive'
+      task :setup do
+        sh './spec/fixtures/provision/linux.sh'
+      end
+      
+      desc 'Run unit tests on Linux'
+      RSpec::Core::RakeTask.new(:unit) do |t|
+        t.rspec_opts = '--pattern spec/unit/**/*'
       end
 
-      # Run RSpec tests that are slow or require slow to start containers for setup
+      desc 'Run integration tests on Linux'
+      RSpec::Core::RakeTask.new(:integration) do |t|
+        t.rspec_opts = '--pattern spec/integration/**/* --tag ~windows_agents --tag ~omi --tag ~kerberos --tag ~windows'
+      end
+
       desc ''
-      RSpec::Core::RakeTask.new(:slow) do |t|
-        t.rspec_opts = '--tag puppetserver --tag puppetdb --tag expensive'
+      task :modules do |t|
+        Rake::Task['tests:module'].invoke
       end
     end
 
-    namespace :windows do
-      # Run RSpec tests that do not require Puppet Agents on Windows
+    namespace :Windows do
       desc ''
-      RSpec::Core::RakeTask.new(:agentless) do |t|
-        t.rspec_opts = '--tag ~ssh --tag ~docker --tag ~bash --tag ~windows_agents ' \
-                       '--tag ~orchestrator --tag ~puppetserver --tag ~puppetdb --tag ~omi ' \
-                       '--tag ~kerberos'
+      task :setup do
+        sh 'powershell "& ./spec/fixtures/provision/windows.ps1"'
       end
 
-      # Run RSpec tests that require Puppet Agents configured with Windows
+      desc 'Run unit tests on Windows'
+      RSpec::Core::RakeTask.new(:unit) do |t|
+        t.rspec_opts = t.rspec_opts = '--pattern spec/unit/**/* --tag ~ssh --tag ~bash'
+      end
+
+      desc 'Run integration tests on Windows'
+      RSpec::Core::RakeTask.new(:integration) do |t|
+        t.rspec_opts = t.rspec_opts = '--pattern spec/integration/**/* --tag windows_agents'
+      end
+
       desc ''
-      RSpec::Core::RakeTask.new(:agentful) do |t|
-        t.rspec_opts = '--tag windows_agents'
+      task :modules do |t|
+        Rake::Task['tests:module'].invoke
       end
     end
 
