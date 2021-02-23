@@ -1,0 +1,50 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', '**.erb', 'schemas/*']
+  pull_request:
+    types: [opened, reopened, edited, synchronize]
+    paths-ignore: ['**.md', '**.erb', 'schemas/*']
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+
+  tests:
+    name: ${{ matrix.os }} ${{ matrix.type }}
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest]
+        type: [integration]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Ruby and install gems
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+          bundler-cache: true
+
+      - name: Update gems
+        run: bundle update
+
+      - name: Install modules
+        run: bundle exec r10k puppetfile install
+
+      - name: Setup testing infrastructure
+        if: matrix.type == 'integration'
+        run: |
+          docker-compose -f spec/docker-compose.win.yaml build
+          docker-compose -f spec/docker-compose.win.yaml up -d
+
+      - name: Run tests
+        run: bundle exec rake tests:${{ runner.os }}:${{ matrix.type }}

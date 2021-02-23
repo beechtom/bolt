@@ -49,7 +49,7 @@ module Bolt
       end
 
       def process_run_results(targets, results, task_name, position = [])
-        targets_by_name = Hash[targets.map { |t| t.host || t.name }.zip(targets)]
+        targets_by_name = targets.map { |t| t.host || t.name }.zip(targets).to_h
         results.map do |node_result|
           target = targets_by_name[node_result['name']]
           state = node_result['state']

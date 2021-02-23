@@ -3,46 +3,44 @@
 # rubocop:disable Lint/SuppressedException
 begin
   require 'rspec/core/rake_task'
+  require 'open3'
 
   namespace :tests do
     desc "Run all RSpec tests"
     RSpec::Core::RakeTask.new(:spec)
 
-    desc "Run RSpec tests that do not require VM fixtures or a particular shell"
-    RSpec::Core::RakeTask.new(:unit) do |t|
-      t.rspec_opts = '--tag ~ssh --tag ~docker --tag ~bash --tag ~winrm ' \
-                     '--tag ~windows_agents --tag ~puppetserver --tag ~puppetdb ' \
-                     '--tag ~omi --tag ~kerberos'
+    namespace :Linux do
+      desc ''
+      task :provision do
+        sh './spec/fixtures/provision/linux.sh'
+      end
+      
+      desc 'Run unit tests on Linux'
+      RSpec::Core::RakeTask.new(:unit) do |t|
+        t.rspec_opts = '--pattern spec/unit/**/*'
+      end
+
+      desc 'Run integration tests on Linux'
+      RSpec::Core::RakeTask.new(:integration) do |t|
+        t.rspec_opts = '--pattern spec/integration/**/* --tag ~windows_agents --tag ~omi --tag ~kerberos --tag ~windows'
+      end
     end
 
-    desc 'Run tests that require a host System Under Test configured with WinRM'
-    RSpec::Core::RakeTask.new(:winrm) do |t|
-      t.rspec_opts = '--tag winrm'
-    end
+    namespace :Windows do
+      desc ''
+      task :provision do
+        sh 'powershell "& ./spec/fixtures/provision/windows.ps1"'
+      end
 
-    desc 'Run tests that require a host System Under Test configured with SSH'
-    RSpec::Core::RakeTask.new(:ssh) do |t|
-      t.rspec_opts = '--tag ssh'
-    end
+      desc 'Run unit tests on Windows'
+      RSpec::Core::RakeTask.new(:unit) do |t|
+        t.rspec_opts = t.rspec_opts = '--pattern spec/unit/**/* --tag ~ssh --tag ~bash'
+      end
 
-    desc 'Run tests that require a host System Under Test configured with Docker'
-    RSpec::Core::RakeTask.new(:docker) do |t|
-      t.rspec_opts = '--tag docker'
-    end
-
-    desc 'Run tests that require Bash on the local host'
-    RSpec::Core::RakeTask.new(:bash) do |t|
-      t.rspec_opts = '--tag bash'
-    end
-
-    desc 'Run tests that require Windows on the local host'
-    RSpec::Core::RakeTask.new(:windows) do |t|
-      t.rspec_opts = '--tag windows'
-    end
-
-    desc 'Run tests that require OMI docker container'
-    RSpec::Core::RakeTask.new(:omi) do |t|
-      t.rspec_opts = '--tag omi'
+      desc 'Run integration tests on Windows'
+      task :integration do |t|
+        puts 'hi'
+      end
     end
   end
 

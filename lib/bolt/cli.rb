@@ -132,7 +132,7 @@ module Bolt
           options[:params_parsed] = true
         elsif task_options.any?
           options[:params_parsed] = false
-          options[:task_options] = Hash[task_options.map { |a| a.split('=', 2) }]
+          options[:task_options] = task_options.map { |a| a.split('=', 2) }.to_h
         else
           options[:params_parsed] = true
           options[:task_options] = {}

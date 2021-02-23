@@ -57,9 +57,9 @@ module BoltServer
 
     def initialize(config)
       @config = config
-      @schemas = Hash[REQUEST_SCHEMAS.map do |basename|
+      @schemas = REQUEST_SCHEMAS.map do |basename|
         [basename, JSON.parse(File.read(File.join(__dir__, ['schemas', "#{basename}.json"])))]
-      end]
+      end.to_h
 
       PARTIAL_SCHEMAS.each do |basename|
         schema_content = JSON.parse(File.read(File.join(__dir__, ['schemas', 'partials', "#{basename}.json"])))
