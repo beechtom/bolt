@@ -152,6 +152,8 @@ $User = @{ UserName = 'bolt'; Password = 'P@ssW0rd' }
 New-LocalAdmin @User
 Enable-PSRemoting
 Set-WSManQuickConfig -Force
-Set-WinRMHostConfiguration
-Test-WinRMConfiguration @User | Out-Null
+# Set-WinRMHostConfiguration
+# Test-WinRMConfiguration @User | Out-Null
+netsh advfirewall firewall add rule name="WinRM-HTTP" dir=in localport=5985 protocol=TCP action=allow
+
 ping -t localhost > NULL

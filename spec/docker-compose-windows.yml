@@ -1,0 +1,10 @@
+version: '3'
+services:
+  windows_node:
+    build:
+      context: .
+      dockerfile: Dockerfile.windows
+    container_name: windows_node
+    ports:
+      - '55985:5985'
+      - '55986:5986'

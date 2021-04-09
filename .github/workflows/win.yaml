@@ -1,0 +1,28 @@
+name: Windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, reopened, edited, synchronize]
+
+jobs:
+
+  docs:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+          bundler-cache: true
+      - name: Run Windows container
+        run: |
+          docker-compose -f spec/docker-compose-windows.yml build
+          docker-compose -f spec/docker-compose-windows.yml up -d
+      - name: Run basic Bolt command
+        run: |
+          bundle exec bolt command run whoami --targets winrm://bolt@localhost:55985 --password Passw0rd --no-ssl --log-level trace

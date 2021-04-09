@@ -1,0 +1,23 @@
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
+
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+EXPOSE 5985
+EXPOSE 5986
+
+ADD docker/scripts/ci.ps1 .
+
+RUN Enable-PSRemoting
+RUN Set-WSManQuickConfig -Force
+
+# Configure WinRM
+# RUN winrm quickconfig -q ; \
+#     winrm set winrm/config/service/Auth '@{Basic=\"true\"}' ; \
+#     winrm set winrm/config/service '@{AllowUnencrypted=\"true\"}' ; \
+#     winrm set winrm/config/winrs '@{MaxMemoryPerShellMB=\"1024\"}'
+
+# Add a test account
+RUN net user /add bolt Passw0rd ; \
+    net localgroup Administrators bolt /add
+
+CMD ping -t localhost > NULL
