@@ -66,6 +66,9 @@ module Bolt
       when 'guide'
         { flags: OPTIONS[:global] + %w[format],
           banner: GUIDE_HELP }
+      when 'lookup'
+        { flags: ACTION_OPTS + %w[hiera-config],
+          banner: LOOKUP_HELP }
       when 'module'
         case action
         when 'add'
@@ -175,6 +178,7 @@ module Bolt
           guide             View guides for Bolt concepts and features
           inventory         Show the list of targets an action would run on
           module            Manage Bolt project modules
+          lookup            Look up a value with Hiera
           plan              Convert, create, show, and run Bolt plans
           project           Create and migrate Bolt projects
           script            Upload a local script and run it remotely
@@ -353,6 +357,21 @@ module Bolt
           To filter the targets in the list, use the --targets, --query, or --rerun
           options. To view detailed configuration and data for targets, use the
           --detail option.
+    HELP
+
+    LOOKUP_HELP = <<~HELP
+      NAME
+          lookup
+
+      USAGE
+          bolt lookup <key> {--targets TARGETS | --query QUERY | --rerun FILTER}
+            [options]
+
+      DESCRIPTION
+          Look up a value with Hiera.
+
+      EXAMPLES
+          bolt lookup password --targets servers
     HELP
 
     MODULE_HELP = <<~HELP
