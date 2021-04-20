@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'fiddle'
 require 'logging'
 require 'shellwords'
 require 'bolt/node/errors'
@@ -104,6 +105,7 @@ module Bolt
           options[:check_host_ip] = false if Net::SSH::VALID_OPTIONS.include?(:check_host_ip)
 
           if @load_config
+            warn "@load_config"
             # Mirroring:
             # https://github.com/net-ssh/net-ssh/blob/master/lib/net/ssh/authentication/agent.rb#L80
             # https://github.com/net-ssh/net-ssh/blob/master/lib/net/ssh/authentication/pageant.rb#L403
@@ -113,7 +115,9 @@ module Bolt
                 options[:use_agent] = false
               end
             elsif Bolt::Util.windows?
-              unless pageant_running?
+              warn "Bolt::Util.windows?"
+              unless is_it_the_function_name
+                warn "disabling use_agent"
                 @logger.debug { "Disabling use_agent in net-ssh: pageant process not running" }
                 options[:use_agent] = false
               end
@@ -128,21 +132,28 @@ module Bolt
           validate_ssh_version
           @logger.trace { "Opened session" }
         rescue Net::SSH::AuthenticationFailed => e
+          warn "auth error"
           raise Bolt::Node::ConnectError.new(
             e.message,
             'AUTH_ERROR'
           )
         rescue Net::SSH::HostKeyError => e
+          warn "host key error"
+
           raise Bolt::Node::ConnectError.new(
             "Host key verification failed for #{target.safe_name}: #{e.message}",
             'HOST_KEY_ERROR'
           )
         rescue Net::SSH::ConnectionTimeout
+          warn "timeout error"
+
           raise Bolt::Node::ConnectError.new(
             "Timeout after #{target.options['connect-timeout']} seconds connecting to #{target.safe_name}",
             'CONNECT_ERROR'
           )
         rescue StandardError => e
+          warn "standard error #{e}"
+
           raise Bolt::Node::ConnectError.new(
             "Failed to connect to #{target.safe_name}: #{e.message}",
             'CONNECT_ERROR'
@@ -317,15 +328,16 @@ module Bolt
         # Returns true if the Pageant process is running. Used to determine if
         # the 'use_agent' setting for net-ssh should be disabled.
         #
-        def pageant_running?
-          @pageant ||= begin
-            require 'fiddle'
-
+        def is_it_the_function_name
+          return @pageant if defined? @pageant
+          warn "Pageant check"
+          @pageant = begin
+            warn "begin"
             # Create a handler and open the 'user32' library, which includes the
             # 'FindWindowW' function used to determine if the Pageant process
             # is running.
             user32 = Fiddle.dlopen('user32')
-
+            warn "Fiddle.dlopen"
             # Wrap the 'FindWindowW' function:
             # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-findwindoww
             # This function accepts two parameters: the class name and the
@@ -335,21 +347,26 @@ module Bolt
             find_window = Fiddle::Function.new(
               user32['FindWindowW'],                    # Function name
               [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], # Parameter types
-              Fiddle::TYPE_VOIDP                        # Return type
+              Fiddle::TYPE_UINTPTR_T                    # Return type
             )
+            warn "Fiddle::Function.new"
 
             # Pack the name of the window into a pointer, and then decode that
             # pointer as a native-endian signed long.
             # https://apidock.com/ruby/Array/pack
             # https://apidock.com/ruby/String/unpack
             pageant, = ["Pageant\0".encode(Encoding::UTF_16LE)].pack("p").unpack("l!*")
+            warn "pack unpack"
 
             # Find the 'Pageant' process using the 'FindWindowW' function.
-            status = find_window.call(0, pageant)
+            status, = find_window.call(pageant, pageant)
+            warn "find_window.call"
 
             # If the function does not return NULL (0), then the process was
             # found running.
             status.to_i != 0
+          rescue Exception => e
+            warn "pageant check error #{e}"
           end
         end
       end
