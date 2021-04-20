@@ -318,7 +318,7 @@ module Bolt
         # the 'use_agent' setting for net-ssh should be disabled.
         #
         def pageant_running?
-          @pageant_running ||= begin
+          @pageant ||= begin
             require 'fiddle'
 
             # Create a handler and open the 'user32' library, which includes the
@@ -335,7 +335,7 @@ module Bolt
             find_window = Fiddle::Function.new(
               user32['FindWindowW'],                    # Function name
               [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP], # Parameter types
-              Fiddle::TYPE_LONG                         # Return type
+              Fiddle::TYPE_VOIDP                        # Return type
             )
 
             # Pack the name of the window into a pointer, and then decode that
