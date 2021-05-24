@@ -25,6 +25,7 @@ module Bolt
         details[:file]   = err.file if defined?(err.file)
         details[:line]   = err.line if defined?(err.line)
         details[:column] = err.pos if defined?(err.pos)
+        details[:backtrace] = err.backtrace if defined?(err.backtrace)
 
         error.add_filelineno(details.compact)
         error
