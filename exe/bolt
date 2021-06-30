@@ -1,6 +1,26 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+ENV['BOOTSNAP_CACHE_DIR'] = begin
+  if RbConfig::CONFIG['host_os'] =~/mswin|mingw|cygwin/
+    File.join(ENV['ProgramData'], 'Puppetlabs', 'bolt')
+  else
+    File.expand_path('~/.puppetlabs/etc/bolt')
+  end
+rescue StandardError; end
+
+unless ENV['BOOTSNAP_CACHE_DIR']
+  require 'bootsnap'
+
+  Bootsnap.setup(
+    cache_dir:            ENV['BOOTSNAP_CACHE_DIR'],
+    development_mode:     false,
+    load_path_cache:      true,
+    compile_cache_iseq:   true,
+    compile_cache_yaml:   false
+  )
+end
+
 require 'bolt'
 require 'bolt/cli'
 
